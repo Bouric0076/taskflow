@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/models/task_model.dart' as model;
 import '../providers/task_provider.dart';
+import '../utils/recurrence_utility.dart';
 
 class TaskEditorSheet extends ConsumerStatefulWidget {
   const TaskEditorSheet({
@@ -16,12 +17,15 @@ class TaskEditorSheet extends ConsumerStatefulWidget {
   final Future<void> Function(
     String title,
     String? description,
+    String? notes,
     DateTime? startDate,
     DateTime? dueDate,
     model.Priority priority,
     model.AlarmMode alarmMode,
     DateTime? customAlarmAt,
     List<int> reminderOffsets,
+    bool isRecurring,
+    String? recurrenceRule,
   )? onSubmit;
 
   bool get isEditing => initialTask != null;
@@ -31,7 +35,6 @@ class TaskEditorSheet extends ConsumerStatefulWidget {
 }
 
 class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
-  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _notesController;
@@ -41,6 +44,16 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
   DateTime? _customAlarmAt;
   model.Priority _priority = model.Priority.normal;
   model.AlarmMode _alarmMode = model.AlarmMode.none;
+  bool _isRecurring = false;
+  final Set<int> _selectedWeekdays = {
+    DateTime.monday,
+    DateTime.tuesday,
+    DateTime.wednesday,
+    DateTime.thursday,
+    DateTime.friday,
+    DateTime.saturday,
+    DateTime.sunday,
+  };
   int? _selectedTemplateId;
   final Set<int> _selectedReminderOffsets = {
     AppConstants.defaultReminderMinutes
@@ -64,6 +77,14 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
     _alarmMode = task?.alarmMode ?? model.AlarmMode.none;
     _customAlarmAt =
         task?.alarmMode == model.AlarmMode.customTime ? task?.alarmAt : null;
+
+    _isRecurring = task?.isRecurring ?? false;
+    final fromRule = parseWeeklyRecurrenceRule(task?.recurrenceRule);
+    if (fromRule.isNotEmpty) {
+      _selectedWeekdays
+      ..clear()
+      ..addAll(fromRule);
+    }
 
     final fromStorage = (task?.reminderOffsets ?? '')
         .split(',')
@@ -145,6 +166,19 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
     }
   }
 
+  String _weekdayLabel(int weekday) {
+    return switch (weekday) {
+      DateTime.monday => 'Mon',
+      DateTime.tuesday => 'Tue',
+      DateTime.wednesday => 'Wed',
+      DateTime.thursday => 'Thu',
+      DateTime.friday => 'Fri',
+      DateTime.saturday => 'Sat',
+      DateTime.sunday => 'Sun',
+      _ => '',
+    };
+  }
+
   DateTime? _resolveAlarmAnchor() {
     switch (_alarmMode) {
       case model.AlarmMode.none:
@@ -160,7 +194,12 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
 
   Future<void> _submit() async {
     if (_isSaving) return;
-    if (!_formKey.currentState!.validate()) return;
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Title is required.')),
+      );
+      return;
+    }
 
     if (_startDate != null &&
         _dueDate != null &&
@@ -195,9 +234,28 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
     final alarmAnchor = _resolveAlarmAnchor();
     if (_alarmMode != model.AlarmMode.none &&
         alarmAnchor != null &&
+        !_isRecurring &&
         !alarmAnchor.isAfter(DateTime.now())) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Alarm time must be in the future.')),
+      );
+      return;
+    }
+
+    final recurrenceRule = _isRecurring
+        ? serializeWeeklyRecurrenceRule(_selectedWeekdays)
+        : null;
+
+    if (_isRecurring && recurrenceRule == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pick at least one weekday.')),
+      );
+      return;
+    }
+
+    if (_isRecurring && _startDate == null && _dueDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Weekly repeat needs a start or due time.')),
       );
       return;
     }
@@ -210,13 +268,20 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
       await widget.onSubmit?.call(
         _titleController.text,
         _descriptionController.text,
+        _notesController.text,
         _startDate,
         _dueDate,
         _priority,
         _alarmMode,
         _customAlarmAt,
         _selectedReminderOffsets.toList()..sort(),
+        _isRecurring,
+        recurrenceRule,
       );
+      if (!mounted) return;
+
+      FocusScope.of(context).unfocus();
+      await Future<void>.delayed(Duration.zero);
       if (mounted) Navigator.of(context).pop();
     } on ArgumentError catch (e) {
       if (!mounted) return;
@@ -376,7 +441,6 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
         bottom: viewInsets.bottom + 16,
       ),
       child: Form(
-        key: _formKey,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -623,6 +687,78 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
                 _validationHintText(),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Repeat weekly'),
+                subtitle: Text(_isRecurring
+                    ? 'Advances to the next selected weekday after completion.'
+                    : 'Keep this task on a weekly cycle.'),
+                value: _isRecurring,
+                onChanged: (value) {
+                  setState(() {
+                    _isRecurring = value;
+                    if (_selectedWeekdays.isEmpty) {
+                      _selectedWeekdays.addAll({
+                        DateTime.monday,
+                        DateTime.tuesday,
+                        DateTime.wednesday,
+                        DateTime.thursday,
+                        DateTime.friday,
+                        DateTime.saturday,
+                        DateTime.sunday,
+                      });
+                    }
+                  });
+                },
+              ),
+              if (_isRecurring) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Repeat on',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    DateTime.monday,
+                    DateTime.tuesday,
+                    DateTime.wednesday,
+                    DateTime.thursday,
+                    DateTime.friday,
+                    DateTime.saturday,
+                    DateTime.sunday,
+                  ].map((weekday) {
+                    final selected = _selectedWeekdays.contains(weekday);
+                    return FilterChip(
+                      label: Text(_weekdayLabel(weekday)),
+                      selected: selected,
+                      onSelected: (value) {
+                        setState(() {
+                          if (value) {
+                            _selectedWeekdays.add(weekday);
+                          } else {
+                            _selectedWeekdays.remove(weekday);
+                          }
+                          if (_selectedWeekdays.isEmpty) {
+                            _selectedWeekdays.addAll({
+                              DateTime.monday,
+                              DateTime.tuesday,
+                              DateTime.wednesday,
+                              DateTime.thursday,
+                              DateTime.friday,
+                              DateTime.saturday,
+                              DateTime.sunday,
+                            });
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ],
               const SizedBox(height: 14),
               ElevatedButton(
                 onPressed: _isSaving ? null : _submit,

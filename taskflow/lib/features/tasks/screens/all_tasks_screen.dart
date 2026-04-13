@@ -28,23 +28,29 @@ class AllTasksScreen extends ConsumerWidget {
           onSubmit: (
             title,
             description,
+            notes,
             startDate,
             dueDate,
             priority,
             alarmMode,
             customAlarmAt,
             reminderOffsets,
+            isRecurring,
+            recurrenceRule,
           ) async {
             if (task == null) {
               await actions.createTask(
                 title: title,
                 description: description,
+                notes: notes,
                 startDate: startDate,
                 dueDate: dueDate,
                 priority: priority,
                 alarmMode: alarmMode,
                 customAlarmAt: customAlarmAt,
                 reminderOffsets: reminderOffsets,
+                isRecurring: isRecurring,
+                recurrenceRule: recurrenceRule,
               );
               return;
             }
@@ -53,12 +59,15 @@ class AllTasksScreen extends ConsumerWidget {
               task: task,
               title: title,
               description: description,
+              notes: notes,
               startDate: startDate,
               dueDate: dueDate,
               priority: priority,
               alarmMode: alarmMode,
               customAlarmAt: customAlarmAt,
               reminderOffsets: reminderOffsets,
+              isRecurring: isRecurring,
+              recurrenceRule: recurrenceRule,
             );
           },
         );
@@ -319,6 +328,7 @@ class AllTasksScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'all-tasks-fab',
         onPressed: () => _openEditorSheet(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('New Task'),

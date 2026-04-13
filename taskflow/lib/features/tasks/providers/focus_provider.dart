@@ -89,6 +89,7 @@ class FocusSessionController extends StateNotifier<FocusSessionState> {
     _stopTimer();
     state = state.copyWith(
       taskId: taskId,
+      clearTaskId: taskId == null,
       phase: FocusPhase.focus,
       isRunning: false,
       remainingSeconds: state.focusDuration.inSeconds,

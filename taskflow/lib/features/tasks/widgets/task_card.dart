@@ -5,6 +5,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/models/task_model.dart' as model;
 import '../utils/task_share_utility.dart';
 import 'task_notes_panel.dart';
+import '../utils/recurrence_utility.dart';
 
 class TaskCard extends StatelessWidget {
   const TaskCard({
@@ -89,6 +90,32 @@ class TaskCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         task.notes!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (task.isRecurring) ...[
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.repeat,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Repeats ${formatWeeklyRecurrenceRule(task.recurrenceRule)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(

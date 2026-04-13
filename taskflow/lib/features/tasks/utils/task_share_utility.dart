@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import '../../../data/database/app_database.dart';
+import 'recurrence_utility.dart';
 
 class TaskShareUtility {
   static const platform = MethodChannel('com.taskflow.app/share');
@@ -23,6 +24,10 @@ class TaskShareUtility {
 
     if (task.dueDate != null) {
       buffer.writeln('\n📅 Due: ${_formatDate(task.dueDate!)}');
+    }
+
+    if (task.isRecurring) {
+      buffer.writeln('\n🔁 Repeats: ${formatWeeklyRecurrenceRule(task.recurrenceRule)}');
     }
 
     final priorityName = {

@@ -6,6 +6,7 @@ import '../../../core/utils/notification_service.dart';
 import '../../../core/utils/task_schedule_service.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/models/task_model.dart' as model;
+import '../utils/recurrence_utility.dart';
 
 // ── DB instance ──────────────────────────────────────────
 
@@ -112,6 +113,7 @@ class TaskActions {
     required model.AlarmMode alarmMode,
     required DateTime? alarmAt,
     required DateTime? customAlarmAt,
+    required bool isRecurring,
   }) {
     if (startDate != null && dueDate != null && dueDate.isBefore(startDate)) {
       return 'Due time must be after start time.';
@@ -131,6 +133,7 @@ class TaskActions {
 
     if (alarmMode != model.AlarmMode.none &&
         alarmAt != null &&
+        !isRecurring &&
         !alarmAt.isAfter(DateTime.now())) {
       return 'Alarm time must be in the future.';
     }
@@ -152,15 +155,19 @@ class TaskActions {
   Future<int> createTask({
     required String title,
     String? description,
+    String? notes,
     DateTime? startDate,
     DateTime? dueDate,
     model.Priority priority = model.Priority.normal,
     model.AlarmMode? alarmMode,
     DateTime? customAlarmAt,
     List<int>? reminderOffsets,
+    bool isRecurring = false,
+    String? recurrenceRule,
   }) async {
     final trimmedTitle = title.trim();
     final trimmedDescription = description?.trim();
+    final trimmedNotes = notes?.trim();
     final resolvedMode = _resolveAlarmMode(
       startDate: startDate,
       dueDate: dueDate,
@@ -172,16 +179,28 @@ class TaskActions {
       dueDate: dueDate,
       customAlarmAt: customAlarmAt,
     );
+    final normalizedRecurrenceRule = serializeWeeklyRecurrenceRule(
+      parseWeeklyRecurrenceRule(recurrenceRule),
+    );
+    final recurringEnabled = isRecurring && normalizedRecurrenceRule != null;
+
     final validationError = _validateSchedule(
       startDate: startDate,
       dueDate: dueDate,
       alarmMode: resolvedMode,
       alarmAt: resolvedAlarmAt,
       customAlarmAt: customAlarmAt,
+      isRecurring: recurringEnabled,
     );
     if (validationError != null) {
       throw ArgumentError(validationError);
     }
+
+    if (isRecurring &&
+        normalizedRecurrenceRule == null) {
+      throw ArgumentError('Pick at least one day for the weekly repeat.');
+    }
+
     final serializedOffsets = _serializeReminderOffsets(reminderOffsets);
     final firstReminder = serializedOffsets == null
         ? null
@@ -194,11 +213,14 @@ class TaskActions {
         title: trimmedTitle,
         description: Value(
             trimmedDescription?.isEmpty == true ? null : trimmedDescription),
+        notes: Value(trimmedNotes?.isEmpty == true ? null : trimmedNotes),
         startDate: Value(startDate),
         dueDate: Value(dueDate),
         priority: priority,
         status: model.TaskStatus.pending,
         hasAlarm: Value(hasAlarm),
+        isRecurring: Value(recurringEnabled),
+        recurrenceRule: Value(normalizedRecurrenceRule),
         alarmMode: Value(resolvedMode),
         alarmAt: Value(resolvedAlarmAt),
         reminderOffsets: Value(serializedOffsets),
@@ -216,15 +238,19 @@ class TaskActions {
     required Task task,
     required String title,
     String? description,
+    String? notes,
     DateTime? startDate,
     DateTime? dueDate,
     required model.Priority priority,
     model.AlarmMode? alarmMode,
     DateTime? customAlarmAt,
     List<int>? reminderOffsets,
+    bool isRecurring = false,
+    String? recurrenceRule,
   }) async {
     final trimmedTitle = title.trim();
     final trimmedDescription = description?.trim();
+    final trimmedNotes = notes?.trim();
     final resolvedMode = _resolveAlarmMode(
       startDate: startDate,
       dueDate: dueDate,
@@ -236,16 +262,27 @@ class TaskActions {
       dueDate: dueDate,
       customAlarmAt: customAlarmAt,
     );
+    final normalizedRecurrenceRule = serializeWeeklyRecurrenceRule(
+      parseWeeklyRecurrenceRule(recurrenceRule),
+    );
+    final recurringEnabled = isRecurring && normalizedRecurrenceRule != null;
+
     final validationError = _validateSchedule(
       startDate: startDate,
       dueDate: dueDate,
       alarmMode: resolvedMode,
       alarmAt: resolvedAlarmAt,
       customAlarmAt: customAlarmAt,
+      isRecurring: recurringEnabled,
     );
     if (validationError != null) {
       throw ArgumentError(validationError);
     }
+
+    if (isRecurring && normalizedRecurrenceRule == null) {
+      throw ArgumentError('Pick at least one day for the weekly repeat.');
+    }
+
     final serializedOffsets = _serializeReminderOffsets(reminderOffsets);
     final firstReminder = serializedOffsets == null
         ? null
@@ -259,10 +296,13 @@ class TaskActions {
         title: Value(trimmedTitle),
         description: Value(
             trimmedDescription?.isEmpty == true ? null : trimmedDescription),
+        notes: Value(trimmedNotes?.isEmpty == true ? null : trimmedNotes),
         startDate: Value(startDate),
         dueDate: Value(dueDate),
         priority: Value(priority),
         hasAlarm: Value(hasAlarm),
+        isRecurring: Value(recurringEnabled),
+        recurrenceRule: Value(normalizedRecurrenceRule),
         alarmMode: Value(resolvedMode),
         alarmAt: Value(resolvedAlarmAt),
         reminderOffsets: Value(serializedOffsets),
@@ -278,6 +318,11 @@ class TaskActions {
   }
 
   Future<void> toggleCompletion(Task task) async {
+    if (task.isRecurring) {
+      await _advanceRecurringTask(task);
+      return;
+    }
+
     final nextStatus = task.status == model.TaskStatus.completed
         ? model.TaskStatus.pending
         : model.TaskStatus.completed;
@@ -299,6 +344,67 @@ class TaskActions {
     } else {
       await _scheduler.syncForTask(updatedTask);
     }
+  }
+
+  Future<void> _advanceRecurringTask(Task task) async {
+    final weekdays = parseWeeklyRecurrenceRule(task.recurrenceRule);
+    final selectedWeekdays = weekdays.isEmpty
+        ? {
+            DateTime.monday,
+            DateTime.tuesday,
+            DateTime.wednesday,
+            DateTime.thursday,
+            DateTime.friday,
+            DateTime.saturday,
+            DateTime.sunday,
+          }
+        : weekdays;
+
+    final baseStart = task.startDate;
+    final baseDue = task.dueDate;
+    final baseAlarmAt = task.alarmAt;
+
+    final reference = baseStart ?? baseDue ?? baseAlarmAt ?? DateTime.now();
+    final nextReference = nextWeeklyOccurrenceAfter(
+      reference,
+      selectedWeekdays,
+      after: DateTime.now(),
+    );
+
+    final shift = nextReference.difference(
+      DateTime(
+        reference.year,
+        reference.month,
+        reference.day,
+        reference.hour,
+        reference.minute,
+        reference.second,
+        reference.millisecond,
+        reference.microsecond,
+      ),
+    );
+
+    final nextStart = baseStart?.add(shift);
+    final nextDue = baseDue?.add(shift);
+    final nextAlarmAt = task.alarmMode == model.AlarmMode.customTime &&
+            baseAlarmAt != null
+        ? baseAlarmAt.add(shift)
+        : null;
+
+    await _db.patchTask(
+      task.id,
+      TasksCompanion(
+        status: const Value(model.TaskStatus.pending),
+        startDate: Value(nextStart),
+        dueDate: Value(nextDue),
+        alarmAt: Value(nextAlarmAt),
+        completedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    final updatedTask = await _db.getTaskById(task.id);
+    await _scheduler.syncForTask(updatedTask);
   }
 
   Future<int> deleteTask(int taskId) async {

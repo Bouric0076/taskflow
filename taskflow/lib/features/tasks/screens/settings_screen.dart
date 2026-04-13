@@ -16,11 +16,16 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Settings'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // APPEARANCE
-            _SettingSection(
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
+        children: [
+          _SettingsHeroCard(
+            darkModeEnabled: s.isDarkMode,
+            notificationsEnabled: s.enableNotifications,
+            remindersLabel: s.defaultReminders,
+          ),
+          const SizedBox(height: 12),
+          _SettingSection(
               title: 'Appearance',
               children: [
                 _SettingTile(
@@ -39,7 +44,6 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            // NOTIFICATIONS
             _SettingSection(
               title: 'Notifications',
               children: [
@@ -118,7 +122,6 @@ class SettingsScreen extends ConsumerWidget {
                   ),
               ],
             ),
-            // TASK DEFAULTS
             _SettingSection(
               title: 'Task Defaults',
               children: [
@@ -142,7 +145,6 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            // DISPLAY
             _SettingSection(
               title: 'Display',
               children: [
@@ -163,7 +165,6 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            // DATA & PRIVACY
             _SettingSection(
               title: 'Data & Privacy',
               children: [
@@ -198,30 +199,15 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            // ABOUT
-            _SettingSection(
-              title: 'About',
-              children: [
-                _SettingTile(
-                  title: 'TaskFlow',
-                  subtitle: 'v1.0.0',
-                  leading: const Icon(Icons.app_shortcut_outlined),
-                ),
-                _SettingTile(
-                  title: 'Framework',
-                  subtitle: 'Flutter + Riverpod + Drift',
-                  leading: const Icon(Icons.build_outlined),
-                ),
-                _SettingTile(
-                  title: 'Developed by',
-                  subtitle: 'Sinaps Technology - Innovating for the future',
-                  leading: const Icon(Icons.favorite_border_outlined),
-                ),
-              ],
+            const SizedBox(height: 8),
+            _DeveloperCard(
+              appName: 'TaskFlow',
+              version: 'v1.0.0',
+              framework: 'Flutter + Riverpod + Drift',
+              developer: 'Sinaps Technology',
+              tagline: 'Innovating for the future',
             ),
-            const SizedBox(height: 24),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -376,6 +362,197 @@ class _SettingSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
       ],
+    );
+  }
+}
+
+class _SettingsHeroCard extends StatelessWidget {
+  const _SettingsHeroCard({
+    required this.darkModeEnabled,
+    required this.notificationsEnabled,
+    required this.remindersLabel,
+  });
+
+  final bool darkModeEnabled;
+  final bool notificationsEnabled;
+  final String remindersLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: colorScheme.surfaceContainerHighest,
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.tune_rounded,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Preferences',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tune the app to your working rhythm.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _HeroChip(label: darkModeEnabled ? 'Dark mode on' : 'Light mode'),
+              _HeroChip(label: notificationsEnabled ? 'Notifications on' : 'Notifications off'),
+              _HeroChip(label: 'Reminders $remindersLabel'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroChip extends StatelessWidget {
+  const _HeroChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      label: Text(label),
+      side: BorderSide.none,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+    );
+  }
+}
+
+class _DeveloperCard extends StatelessWidget {
+  const _DeveloperCard({
+    required this.appName,
+    required this.version,
+    required this.framework,
+    required this.developer,
+    required this.tagline,
+  });
+
+  final String appName;
+  final String version;
+  final String framework;
+  final String developer;
+  final String tagline;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              color: colorScheme.secondaryContainer,
+            ),
+            child: Icon(
+              Icons.favorite_border_rounded,
+              color: colorScheme.onSecondaryContainer,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  version,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  framework,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  developer,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  tagline,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

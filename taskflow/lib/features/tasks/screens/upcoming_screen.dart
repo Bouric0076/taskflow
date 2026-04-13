@@ -28,23 +28,29 @@ class UpcomingScreen extends ConsumerWidget {
           onSubmit: (
             title,
             description,
+            notes,
             startDate,
             dueDate,
             priority,
             alarmMode,
             customAlarmAt,
             reminderOffsets,
+            isRecurring,
+            recurrenceRule,
           ) async {
             if (task == null) {
               await actions.createTask(
                 title: title,
                 description: description,
+                notes: notes,
                 startDate: startDate,
                 dueDate: dueDate,
                 priority: priority,
                 alarmMode: alarmMode,
                 customAlarmAt: customAlarmAt,
                 reminderOffsets: reminderOffsets,
+                isRecurring: isRecurring,
+                recurrenceRule: recurrenceRule,
               );
               return;
             }
@@ -53,12 +59,15 @@ class UpcomingScreen extends ConsumerWidget {
               task: task,
               title: title,
               description: description,
+              notes: notes,
               startDate: startDate,
               dueDate: dueDate,
               priority: priority,
               alarmMode: alarmMode,
               customAlarmAt: customAlarmAt,
               reminderOffsets: reminderOffsets,
+              isRecurring: isRecurring,
+              recurrenceRule: recurrenceRule,
             );
           },
         );
@@ -77,9 +86,11 @@ class UpcomingScreen extends ConsumerWidget {
     final completedNow = task.status != model.TaskStatus.completed;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(completedNow
-            ? 'Task marked as complete'
-            : 'Task moved back to pending'),
+        content: Text(task.isRecurring
+            ? 'Recurring task advanced to the next occurrence'
+            : (completedNow
+                ? 'Task marked as complete'
+                : 'Task moved back to pending')),
         duration: const Duration(milliseconds: 1100),
       ),
     );
@@ -217,6 +228,7 @@ class UpcomingScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'upcoming-fab',
         onPressed: () => _openEditorSheet(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('New Task'),

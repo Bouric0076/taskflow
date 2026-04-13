@@ -13,8 +13,25 @@ import '../providers/morning_prompt_provider.dart';
 import '../providers/stats_provider.dart';
 import '../providers/task_provider.dart';
 
-class FocusScreen extends ConsumerWidget {
+class FocusScreen extends ConsumerStatefulWidget {
   const FocusScreen({super.key});
+
+  @override
+  ConsumerState<FocusScreen> createState() => _FocusScreenState();
+}
+
+class _FocusScreenState extends ConsumerState<FocusScreen> {
+  Task? _activeTaskForSession(List<Task> tasks, int? taskId) {
+    if (taskId == null) return null;
+
+    for (final task in tasks) {
+      if (task.id == taskId && task.status != model.TaskStatus.completed) {
+        return task;
+      }
+    }
+
+    return null;
+  }
 
   String _formatDuration(Duration duration) {
     final totalSeconds = duration.inSeconds;
@@ -125,7 +142,21 @@ class FocusScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    ref.listen<AsyncValue<List<Task>>>(allTasksProvider, (previous, next) {
+      final currentSession = ref.read(focusSessionProvider);
+      if (currentSession.taskId == null) return;
+
+      final tasks = next.asData?.value;
+      if (tasks == null) return;
+
+      final selectedTask =
+          _activeTaskForSession(tasks, currentSession.taskId);
+      if (selectedTask == null) {
+        ref.read(focusSessionProvider.notifier).selectTask(null);
+      }
+    });
+
     final tasksAsync = ref.watch(allTasksProvider);
     final todayAsync = ref.watch(todayTasksProvider);
     final session = ref.watch(focusSessionProvider);
@@ -133,15 +164,7 @@ class FocusScreen extends ConsumerWidget {
     final morningPrompt = ref.watch(morningPromptProvider);
     final tasks = tasksAsync.asData?.value ?? const <Task>[];
     final pendingTodayCount = todayAsync.asData?.value.length ?? 0;
-    Task? activeTask;
-    if (session.taskId != null) {
-      for (final task in tasks) {
-        if (task.id == session.taskId) {
-          activeTask = task;
-          break;
-        }
-      }
-    }
+    final activeTask = _activeTaskForSession(tasks, session.taskId);
 
     return Scaffold(
       appBar: AppBar(
@@ -418,9 +441,10 @@ class _ActiveTaskCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.labelLarge,
                   ),
                 ),
-                TextButton(
+                TextButton.icon(
                   onPressed: onClear,
-                  child: const Text('Clear'),
+                  icon: const Icon(Icons.close, size: 18),
+                  label: const Text('Clear'),
                 ),
               ],
             ),
@@ -456,11 +480,19 @@ class _StatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final maxCount = stats.last7DaysCompletions.isEmpty
         ? 1
         : math.max(1, stats.last7DaysCompletions.reduce(math.max));
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.darkDivider : AppColors.divider,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -557,7 +589,16 @@ class _MorningPromptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.darkDivider : AppColors.divider,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
