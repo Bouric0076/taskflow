@@ -27,7 +27,8 @@ class TaskShareUtility {
     }
 
     if (task.isRecurring) {
-      buffer.writeln('\n🔁 Repeats: ${formatWeeklyRecurrenceRule(task.recurrenceRule)}');
+      buffer.writeln(
+          '\n🔁 Repeats: ${formatWeeklyRecurrenceRule(task.recurrenceRule)}');
     }
 
     final priorityName = {

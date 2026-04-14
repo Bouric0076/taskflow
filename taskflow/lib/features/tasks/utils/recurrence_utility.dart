@@ -25,13 +25,15 @@ Set<int> parseWeeklyRecurrenceRule(String? rule) {
       .split(',')
       .map((value) => int.tryParse(value.trim()))
       .whereType<int>()
-      .where((weekday) => weekday >= DateTime.monday && weekday <= DateTime.sunday)
+      .where(
+          (weekday) => weekday >= DateTime.monday && weekday <= DateTime.sunday)
       .toSet();
 }
 
 String? serializeWeeklyRecurrenceRule(Iterable<int> weekdays) {
   final values = weekdays
-      .where((weekday) => weekday >= DateTime.monday && weekday <= DateTime.sunday)
+      .where(
+          (weekday) => weekday >= DateTime.monday && weekday <= DateTime.sunday)
       .toSet()
       .toList()
     ..sort();
@@ -57,8 +59,8 @@ DateTime nextWeeklyOccurrenceAfter(
 }) {
   final normalizedWeekdays = weekdays.isEmpty ? _allWeekdays : weekdays;
   final pivot = after ?? DateTime.now();
-  final searchStart = DateTime(pivot.year, pivot.month, pivot.day)
-      .add(const Duration(days: 1));
+  final searchStart =
+      DateTime(pivot.year, pivot.month, pivot.day).add(const Duration(days: 1));
 
   for (var offset = 0; offset < 14; offset++) {
     final candidateDay = searchStart.add(Duration(days: offset));

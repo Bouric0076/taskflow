@@ -150,8 +150,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
       final tasks = next.asData?.value;
       if (tasks == null) return;
 
-      final selectedTask =
-          _activeTaskForSession(tasks, currentSession.taskId);
+      final selectedTask = _activeTaskForSession(tasks, currentSession.taskId);
       if (selectedTask == null) {
         ref.read(focusSessionProvider.notifier).selectTask(null);
       }
@@ -296,8 +295,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                                                 .read(focusSessionProvider
                                                     .notifier)
                                                 .reset(),
-                                            icon:
-                                                const Icon(Icons.restart_alt),
+                                            icon: const Icon(Icons.restart_alt),
                                             label: const Text('Reset'),
                                           ),
                                           TextButton.icon(

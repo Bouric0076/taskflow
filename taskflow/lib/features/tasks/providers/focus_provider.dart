@@ -153,7 +153,9 @@ class FocusSessionController extends StateNotifier<FocusSessionState> {
   }
 
   Duration _durationForPhase(FocusPhase phase) {
-    return phase == FocusPhase.focus ? state.focusDuration : state.breakDuration;
+    return phase == FocusPhase.focus
+        ? state.focusDuration
+        : state.breakDuration;
   }
 
   void _tick() {
@@ -173,8 +175,9 @@ class FocusSessionController extends StateNotifier<FocusSessionState> {
         : FocusPhase.focus;
 
     final nextRemaining = _durationForPhase(nextPhase).inSeconds;
-    final nextCompletedFocusSessions =
-        state.phase == FocusPhase.focus ? state.completedFocusSessions + 1 : state.completedFocusSessions;
+    final nextCompletedFocusSessions = state.phase == FocusPhase.focus
+        ? state.completedFocusSessions + 1
+        : state.completedFocusSessions;
 
     state = state.copyWith(
       phase: nextPhase,

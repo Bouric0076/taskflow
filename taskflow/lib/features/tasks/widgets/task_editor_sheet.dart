@@ -82,8 +82,8 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
     final fromRule = parseWeeklyRecurrenceRule(task?.recurrenceRule);
     if (fromRule.isNotEmpty) {
       _selectedWeekdays
-      ..clear()
-      ..addAll(fromRule);
+        ..clear()
+        ..addAll(fromRule);
     }
 
     final fromStorage = (task?.reminderOffsets ?? '')
@@ -242,9 +242,8 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
       return;
     }
 
-    final recurrenceRule = _isRecurring
-        ? serializeWeeklyRecurrenceRule(_selectedWeekdays)
-        : null;
+    final recurrenceRule =
+        _isRecurring ? serializeWeeklyRecurrenceRule(_selectedWeekdays) : null;
 
     if (_isRecurring && recurrenceRule == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -255,7 +254,8 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
 
     if (_isRecurring && _startDate == null && _dueDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Weekly repeat needs a start or due time.')),
+        const SnackBar(
+            content: Text('Weekly repeat needs a start or due time.')),
       );
       return;
     }

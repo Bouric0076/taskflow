@@ -26,193 +26,199 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _SettingSection(
-              title: 'Appearance',
-              children: [
-                _SettingTile(
-                  title: 'Dark Mode',
-                  subtitle: s.isDarkMode ? 'Enabled' : 'Disabled',
-                  leading: Icon(
-                    s.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  trailing: Switch(
-                    value: s.isDarkMode,
-                    onChanged: (value) {
-                      ref.read(appSettingsProvider.notifier).setDarkMode(value);
-                    },
-                  ),
+            title: 'Appearance',
+            children: [
+              _SettingTile(
+                title: 'Dark Mode',
+                subtitle: s.isDarkMode ? 'Enabled' : 'Disabled',
+                leading: Icon(
+                  s.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-              ],
-            ),
-            _SettingSection(
-              title: 'Notifications',
-              children: [
-                _SettingTile(
-                  title: 'Enable Notifications',
-                  subtitle: s.enableNotifications
-                      ? 'You will receive task reminders'
-                      : 'Notifications are off',
-                  leading: Icon(
-                    s.enableNotifications
-                        ? Icons.notifications_active
-                        : Icons.notifications_off_outlined,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  trailing: Switch(
-                    value: s.enableNotifications,
-                    onChanged: (value) {
-                      ref
-                          .read(appSettingsProvider.notifier)
-                          .setEnableNotifications(value);
-                    },
-                  ),
-                ),
-                if (s.enableNotifications)
-                  _SettingTile(
-                    title: 'Alarm Sounds',
-                    subtitle: s.enableAlarmSounds ? 'Alarms will produce sound' : 'Silent mode',
-                    leading: Icon(
-                      s.enableAlarmSounds ? Icons.volume_up : Icons.volume_off,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    trailing: Switch(
-                      value: s.enableAlarmSounds,
-                      onChanged: (value) {
-                        ref
-                            .read(appSettingsProvider.notifier)
-                            .setEnableAlarmSounds(value);
-                      },
-                    ),
-                  ),
-                _SettingTile(
-                  title: 'Morning Prompt',
-                  subtitle: morningPrompt.enabled
-                      ? 'Daily reminder at ${morningPrompt.time.format(context)}'
-                      : 'Disabled',
-                  leading: Icon(
-                    morningPrompt.enabled
-                        ? Icons.coffee_outlined
-                        : Icons.notifications_paused_outlined,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  trailing: Switch(
-                    value: morningPrompt.enabled,
-                    onChanged: (enabled) {
-                      ref
-                          .read(morningPromptProvider.notifier)
-                          .setEnabled(enabled, taskCount: 0);
-                    },
-                  ),
-                ),
-                if (morningPrompt.enabled)
-                  _SettingTile(
-                    title: 'Notification Time',
-                    subtitle: morningPrompt.time.format(context),
-                    leading: const Icon(Icons.schedule),
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: morningPrompt.time,
-                      );
-                      if (picked == null || !context.mounted) return;
-                      await ref
-                          .read(morningPromptProvider.notifier)
-                          .setTime(picked, taskCount: 0);
-                    },
-                  ),
-              ],
-            ),
-            _SettingSection(
-              title: 'Task Defaults',
-              children: [
-                _SettingTile(
-                  title: 'Default Priority',
-                  subtitle: s.defaultTaskPriority.toUpperCase(),
-                  leading: const Icon(Icons.flag_outlined),
-                  onTap: () => _showPriorityDialog(context, ref, s),
-                ),
-                _SettingTile(
-                  title: 'Default Reminders',
-                  subtitle: '${s.defaultReminders} minutes before',
-                  leading: const Icon(Icons.alarm_on_outlined),
-                  onTap: () => _showRemindersDialog(context, ref, s),
-                ),
-                _SettingTile(
-                  title: 'Default Alarm Mode',
-                  subtitle: s.defaultAlarmMode.replaceAll(RegExp(r'([A-Z])'), ' \$1').trim(),
-                  leading: const Icon(Icons.schedule_outlined),
-                  onTap: () => _showAlarmModeDialog(context, ref, s),
-                ),
-              ],
-            ),
-            _SettingSection(
-              title: 'Display',
-              children: [
-                _SettingTile(
-                  title: 'Show Completed Tasks',
-                  subtitle: s.showCompletedTasks
-                      ? 'Completed tasks are visible'
-                      : 'Completed tasks are hidden',
-                  leading: const Icon(Icons.done_all_outlined),
-                  trailing: Switch(
-                    value: s.showCompletedTasks,
-                    onChanged: (value) {
-                      ref
-                          .read(appSettingsProvider.notifier)
-                          .setShowCompletedTasks(value);
-                    },
-                  ),
-                ),
-              ],
-            ),
-            _SettingSection(
-              title: 'Data & Privacy',
-              children: [
-                _SettingTile(
-                  title: 'Reset All Settings',
-                  subtitle: 'Restore to default settings',
-                  leading: const Icon(Icons.restore_outlined),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Reset Settings?'),
-                        content: const Text('This will restore all settings to their defaults.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancel'),
-                          ),
-                          FilledButton(
-                            onPressed: () {
-                              ref
-                                  .read(appSettingsProvider.notifier)
-                                  .resetToDefaults();
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Reset'),
-                          ),
-                        ],
-                      ),
-                    );
+                trailing: Switch(
+                  value: s.isDarkMode,
+                  onChanged: (value) {
+                    ref.read(appSettingsProvider.notifier).setDarkMode(value);
                   },
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _DeveloperCard(
-              appName: 'TaskFlow',
-              version: 'v1.0.0',
-              framework: 'Flutter + Riverpod + Drift',
-              developer: 'Sinaps Technology',
-              tagline: 'Innovating for the future',
-            ),
+              ),
+            ],
+          ),
+          _SettingSection(
+            title: 'Notifications',
+            children: [
+              _SettingTile(
+                title: 'Enable Notifications',
+                subtitle: s.enableNotifications
+                    ? 'You will receive task reminders'
+                    : 'Notifications are off',
+                leading: Icon(
+                  s.enableNotifications
+                      ? Icons.notifications_active
+                      : Icons.notifications_off_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                trailing: Switch(
+                  value: s.enableNotifications,
+                  onChanged: (value) {
+                    ref
+                        .read(appSettingsProvider.notifier)
+                        .setEnableNotifications(value);
+                  },
+                ),
+              ),
+              if (s.enableNotifications)
+                _SettingTile(
+                  title: 'Alarm Sounds',
+                  subtitle: s.enableAlarmSounds
+                      ? 'Alarms will produce sound'
+                      : 'Silent mode',
+                  leading: Icon(
+                    s.enableAlarmSounds ? Icons.volume_up : Icons.volume_off,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  trailing: Switch(
+                    value: s.enableAlarmSounds,
+                    onChanged: (value) {
+                      ref
+                          .read(appSettingsProvider.notifier)
+                          .setEnableAlarmSounds(value);
+                    },
+                  ),
+                ),
+              _SettingTile(
+                title: 'Morning Prompt',
+                subtitle: morningPrompt.enabled
+                    ? 'Daily reminder at ${morningPrompt.time.format(context)}'
+                    : 'Disabled',
+                leading: Icon(
+                  morningPrompt.enabled
+                      ? Icons.coffee_outlined
+                      : Icons.notifications_paused_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                trailing: Switch(
+                  value: morningPrompt.enabled,
+                  onChanged: (enabled) {
+                    ref
+                        .read(morningPromptProvider.notifier)
+                        .setEnabled(enabled, taskCount: 0);
+                  },
+                ),
+              ),
+              if (morningPrompt.enabled)
+                _SettingTile(
+                  title: 'Notification Time',
+                  subtitle: morningPrompt.time.format(context),
+                  leading: const Icon(Icons.schedule),
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: morningPrompt.time,
+                    );
+                    if (picked == null || !context.mounted) return;
+                    await ref
+                        .read(morningPromptProvider.notifier)
+                        .setTime(picked, taskCount: 0);
+                  },
+                ),
+            ],
+          ),
+          _SettingSection(
+            title: 'Task Defaults',
+            children: [
+              _SettingTile(
+                title: 'Default Priority',
+                subtitle: s.defaultTaskPriority.toUpperCase(),
+                leading: const Icon(Icons.flag_outlined),
+                onTap: () => _showPriorityDialog(context, ref, s),
+              ),
+              _SettingTile(
+                title: 'Default Reminders',
+                subtitle: '${s.defaultReminders} minutes before',
+                leading: const Icon(Icons.alarm_on_outlined),
+                onTap: () => _showRemindersDialog(context, ref, s),
+              ),
+              _SettingTile(
+                title: 'Default Alarm Mode',
+                subtitle: s.defaultAlarmMode
+                    .replaceAll(RegExp(r'([A-Z])'), ' \$1')
+                    .trim(),
+                leading: const Icon(Icons.schedule_outlined),
+                onTap: () => _showAlarmModeDialog(context, ref, s),
+              ),
+            ],
+          ),
+          _SettingSection(
+            title: 'Display',
+            children: [
+              _SettingTile(
+                title: 'Show Completed Tasks',
+                subtitle: s.showCompletedTasks
+                    ? 'Completed tasks are visible'
+                    : 'Completed tasks are hidden',
+                leading: const Icon(Icons.done_all_outlined),
+                trailing: Switch(
+                  value: s.showCompletedTasks,
+                  onChanged: (value) {
+                    ref
+                        .read(appSettingsProvider.notifier)
+                        .setShowCompletedTasks(value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          _SettingSection(
+            title: 'Data & Privacy',
+            children: [
+              _SettingTile(
+                title: 'Reset All Settings',
+                subtitle: 'Restore to default settings',
+                leading: const Icon(Icons.restore_outlined),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Reset Settings?'),
+                      content: const Text(
+                          'This will restore all settings to their defaults.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            ref
+                                .read(appSettingsProvider.notifier)
+                                .resetToDefaults();
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _DeveloperCard(
+            appName: 'TaskFlow',
+            version: 'v1.0.0',
+            framework: 'Flutter + Riverpod + Drift',
+            developer: 'Sinaps Technology',
+            tagline: 'Innovating for the future',
+          ),
         ],
       ),
     );
   }
 
-  void _showPriorityDialog(BuildContext context, WidgetRef ref, AppSettings settings) {
+  void _showPriorityDialog(
+      BuildContext context, WidgetRef ref, AppSettings settings) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -220,8 +226,7 @@ class SettingsScreen extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: ['normal', 'important', 'critical']
-              .map((priority) => 
-                  RadioListTile<String>(
+              .map((priority) => RadioListTile<String>(
                     title: Text(priority.toUpperCase()),
                     value: priority,
                     // ignore: deprecated_member_use
@@ -242,7 +247,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showRemindersDialog(BuildContext context, WidgetRef ref, AppSettings settings) {
+  void _showRemindersDialog(
+      BuildContext context, WidgetRef ref, AppSettings settings) {
     final controller = TextEditingController(text: settings.defaultReminders);
 
     showDialog(
@@ -259,7 +265,8 @@ class SettingsScreen extends ConsumerWidget {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 hintText: 'e.g., 15,60,1440',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
@@ -283,7 +290,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAlarmModeDialog(BuildContext context, WidgetRef ref, AppSettings settings) {
+  void _showAlarmModeDialog(
+      BuildContext context, WidgetRef ref, AppSettings settings) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -291,9 +299,9 @@ class SettingsScreen extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: ['none', 'atStart', 'atDue', 'customTime']
-              .map((mode) => 
-                  RadioListTile<String>(
-                    title: Text(mode.replaceAll(RegExp(r'([A-Z])'), ' \$1').trim()),
+              .map((mode) => RadioListTile<String>(
+                    title: Text(
+                        mode.replaceAll(RegExp(r'([A-Z])'), ' \$1').trim()),
                     value: mode,
                     // ignore: deprecated_member_use
                     groupValue: settings.defaultAlarmMode,
@@ -385,7 +393,8 @@ class _SettingsHeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         color: colorScheme.surfaceContainerHighest,
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.12),
@@ -438,7 +447,10 @@ class _SettingsHeroCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               _HeroChip(label: darkModeEnabled ? 'Dark mode on' : 'Light mode'),
-              _HeroChip(label: notificationsEnabled ? 'Notifications on' : 'Notifications off'),
+              _HeroChip(
+                  label: notificationsEnabled
+                      ? 'Notifications on'
+                      : 'Notifications off'),
               _HeroChip(label: 'Reminders $remindersLabel'),
             ],
           ),
@@ -487,7 +499,8 @@ class _DeveloperCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.08),
@@ -604,7 +617,9 @@ class _SettingTile extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                       ),
                     ],
